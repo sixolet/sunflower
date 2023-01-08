@@ -37,7 +37,14 @@ function process_midi(data)
         local release = params:get("release")
         local cutoff = params:get("cutoff")
         local filterEnv = params:get("filterEnv")
-        engine.perc(pitch, amp, release, cutoff, filterEnv)
+        local power = params:get("power")
+        local index = params:get("index")
+        local indexEnv = params:get("indexEnv")
+        if params:get("style") == 1 then
+            engine.perc(pitch, amp, release, cutoff, filterEnv)
+        elseif params:get("style") == 2 then
+            engine.fmperc(pitch, amp, release, power, index, indexEnv)
+        end
     end
 end
 
@@ -63,12 +70,33 @@ function init()
         table.insert(midi_device_names,"port "..i..": "..util.trim_string_to_width(midi_device[i].name,40)) -- register its name
     end
     params:add_option("midi target", "midi target",midi_device_names,1,false)
-    params:set_action("midi target", midi_target)  
+    params:set_action("midi target", midi_target)
     params:add_control("root", "root", controlspec.new(110, 440, 'exp', 0, 220, 'Hz', 0.001))
+    params:add_option("style", "style", {"additive", "fm"}, 1)
+    params:set_action("style", function()
+        local style = params:get("style")
+        if style == 1 then
+            params:show("cutoff")
+            params:show("filterEnv")
+            params:hide("power")
+            params:hide("index")
+            params:hide("indexEnv")
+        elseif style == 2 then
+            params:hide("cutoff")
+            params:hide("filterEnv")
+            params:show("power")
+            params:show("index")
+            params:show("indexEnv")            
+        end
+        _menu.rebuild_params()
+    end)
     params:add_control("amp", "amp", controlspec.new(0, 1, 'lin', 0, 0.3))
     params:add_control("release", "release", controlspec.new(0.01, 10, 'exp', 0, 0.5, 's'))
     params:add_control("cutoff", "cutoff", controlspec.FREQ)
     params:add_control("filterEnv", "filter env mod", controlspec.new(0, 10, 'lin', 0, 4))
+    params:add_number("power", "power", 1, 4, 1)
+    params:add_control("index", "index", controlspec.new(0, 4, 'lin', 0, 1))
+    params:add_control("indexEnv", "index env mod", controlspec.new(0, 4, 'lin', 0, 1))
 
     clock.run(function()
         while true do
