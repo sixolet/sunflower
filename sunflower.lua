@@ -91,12 +91,12 @@ function init()
         _menu.rebuild_params()
     end)
     params:add_control("amp", "amp", controlspec.new(0, 1, 'lin', 0, 0.3))
-    params:add_control("release", "release", controlspec.new(0.01, 10, 'exp', 0, 0.5, 's'))
+    params:add_control("release", "release", controlspec.new(0.01, 10, 'exp', 0, 1, 's'))
     params:add_control("cutoff", "cutoff", controlspec.FREQ)
     params:add_control("filterEnv", "filter env mod", controlspec.new(0, 10, 'lin', 0, 4))
     params:add_number("power", "power", 1, 4, 1)
-    params:add_control("index", "index", controlspec.new(0, 4, 'lin', 0, 1))
-    params:add_control("indexEnv", "index env mod", controlspec.new(0, 4, 'lin', 0, 1))
+    params:add_control("index", "index", controlspec.new(0, 4, 'lin', 0, 0.1))
+    params:add_control("indexEnv", "index env mod", controlspec.new(0, 4, 'lin', 0, 0.5))
 
     clock.run(function()
         while true do
@@ -116,10 +116,17 @@ function redraw()
     local angle = 2*math.pi*(clock.get_beats()%64)/64
     for radius=1,127 do
         local b
-        if brightnesses[radius] > 1 then
-            b = brightnesses[radius]
-            brightnesses[radius] = b*decay
-            b = math.floor(b)
+        local group = math.floor(radius/13)
+        local within = radius % 13
+        if within > 0 then
+            local loc = group * 12 + within
+            if brightnesses[loc] > 1 then
+                b = brightnesses[loc]
+                brightnesses[loc] = b*decay
+                b = math.floor(b)
+            else
+                b = 0
+            end
         else
             b = 0
         end
